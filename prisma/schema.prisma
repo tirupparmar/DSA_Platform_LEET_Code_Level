@@ -1,0 +1,176 @@
+// prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  name          String?
+  username      String?  @unique
+  avatar        String?
+  passwordHash  String?
+  provider      String   @default("credentials")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // Stats
+  totalSolved   Int      @default(0)
+  streak        Int      @default(0)
+  lastActiveAt  DateTime @default(now())
+  xp            Int      @default(0)
+  level         Int      @default(1)
+  
+  // Relations
+  submissions   Submission[]
+  progress      UserProgress[]
+  simSaveStates SimSaveState[]
+  
+  @@map("users")
+}
+
+model Problem {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  title       String
+  description String   @db.Text
+  difficulty  Difficulty
+  category    String
+  tags        String[]
+  
+  // Code templates per language
+  starterCode Json     // { python: "...", javascript: "...", java: "..." }
+  
+  // Test cases (hidden + visible)
+  testCases   Json     // [{ input: "...", expected: "...", hidden: bool }]
+  
+  // Solution
+  solution    String?  @db.Text
+  hints       String[]
+  
+  // Stats
+  totalAttempts   Int @default(0)
+  totalAccepted   Int @default(0)
+  
+  // Relations
+  submissions     Submission[]
+  simScenario     SimScenario?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("problems")
+}
+
+model Submission {
+  id          String    @id @default(cuid())
+  userId      String
+  problemId   String
+  code        String    @db.Text
+  language    Language
+  status      SubStatus
+  runtime     Int?      // ms
+  memory      Int?      // KB
+  passedTests Int       @default(0)
+  totalTests  Int       @default(0)
+  stdout      String?   @db.Text
+  stderr      String?   @db.Text
+  createdAt   DateTime  @default(now())
+  
+  user    User    @relation(fields: [userId], references: [id])
+  problem Problem @relation(fields: [problemId], references: [id])
+  
+  @@map("submissions")
+}
+
+model UserProgress {
+  id        String   @id @default(cuid())
+  userId    String
+  problemId String
+  status    ProgStatus
+  attempts  Int      @default(0)
+  bestRuntime Int?
+  notes     String?  @db.Text
+  solvedAt  DateTime?
+  
+  user User @relation(fields: [userId], references: [id])
+  
+  @@unique([userId, problemId])
+  @@map("user_progress")
+}
+
+model SimScenario {
+  id          String @id @default(cuid())
+  problemId   String @unique
+  type        SimType
+  title       String
+  description String @db.Text
+  config      Json   // scenario-specific config (nodes, edges, etc.)
+  
+  problem   Problem       @relation(fields: [problemId], references: [id])
+  saveStates SimSaveState[]
+  
+  @@map("sim_scenarios")
+}
+
+model SimSaveState {
+  id         String   @id @default(cuid())
+  userId     String
+  scenarioId String
+  state      Json     // complete simulation state
+  step       Int      @default(0)
+  completed  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  
+  user     User        @relation(fields: [userId], references: [id])
+  scenario SimScenario @relation(fields: [scenarioId], references: [id])
+  
+  @@unique([userId, scenarioId])
+  @@map("sim_save_states")
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum Language {
+  PYTHON
+  JAVASCRIPT
+  JAVA
+  CPP
+  GO
+}
+
+enum SubStatus {
+  ACCEPTED
+  WRONG_ANSWER
+  TIME_LIMIT
+  MEMORY_LIMIT
+  RUNTIME_ERROR
+  COMPILE_ERROR
+  PENDING
+}
+
+enum ProgStatus {
+  NOT_STARTED
+  ATTEMPTED
+  SOLVED
+}
+
+enum SimType {
+  GRAPH_SHORTEST_PATH
+  QUEUE_SIMULATION
+  STACK_SIMULATION
+  TREE_TRAVERSAL
+  SORTING_VISUAL
+  BINARY_SEARCH
+  DP_GRID
+}

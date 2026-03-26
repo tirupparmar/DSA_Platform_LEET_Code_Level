@@ -1,0 +1,5 @@
+﻿.next/types/app/api/auth/[...nextauth]/route.ts(8,13): error TS2344: Type 'OmitWithTag<typeof import("D:/1DSA_with_java/algosim-project/src/app/api/auth/[...nextauth]/route"), "POST" | "config" | "generateStaticParams" | "revalidate" | "dynamic" | "dynamicParams" | ... 9 more ... | "PATCH", "">' does not satisfy the constraint '{ [x: string]: never; }'.
+  Property 'authOptions' is incompatible with index signature.
+    Type 'AuthOptions' is not assignable to type 'never'.
+src/components/layout/Footer.tsx(1,24): error TS2307: Cannot find module './CTASection' or its corresponding type declarations.
+src/lib/redis.ts(22,41): error TS2307: Cannot find module 'redis' or its corresponding type declarations.
